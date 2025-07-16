@@ -190,8 +190,8 @@ func (r *ProjectResource) Create(ctx context.Context, req resource.CreateRequest
 		projectReq.Color = data.Color.ValueString()
 	}
 
-	// Create the project
-	httpResp, err := r.client.Post(ctx, "/api/backend/v1/projects", projectReq)
+	// Create the project using IAAC endpoint
+	httpResp, err := r.client.Post(ctx, "/api/backend/v1/iaac/projects", projectReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create project, got error: %s", err))
 		return
@@ -225,8 +225,8 @@ func (r *ProjectResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	// Get project details
-	endpoint := fmt.Sprintf("/api/backend/v1/projects/details?projectIdentifier=%s", url.QueryEscape(data.Id.ValueString()))
+	// Get project details using IAAC endpoint
+	endpoint := fmt.Sprintf("/api/backend/v1/iaac/projects?projectIdentifier=%s", url.QueryEscape(data.Id.ValueString()))
 	httpResp, err := r.client.Get(ctx, endpoint)
 	if err != nil {
 		// Check if this is a 404 error (resource not found)
@@ -296,8 +296,8 @@ func (r *ProjectResource) Update(ctx context.Context, req resource.UpdateRequest
 	class := data.Color.ValueString()
 	updateReq.Color = &class
 
-	// Update the project
-	endpoint := fmt.Sprintf("/api/backend/v1/projects?projectIdentifier=%s", url.QueryEscape(data.Id.ValueString()))
+	// Update the project using IAAC endpoint
+	endpoint := fmt.Sprintf("/api/backend/v1/iaac/projects?projectIdentifier=%s", url.QueryEscape(data.Id.ValueString()))
 	httpResp, err := r.client.Put(ctx, endpoint, updateReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update project, got error: %s", err))
@@ -330,8 +330,8 @@ func (r *ProjectResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	// Delete the project
-	endpoint := fmt.Sprintf("/api/backend/v1/projects?projectIdentifier=%s", url.QueryEscape(data.Id.ValueString()))
+	// Delete the project using IAAC endpoint
+	endpoint := fmt.Sprintf("/api/backend/v1/iaac/projects?projectIdentifier=%s", url.QueryEscape(data.Id.ValueString()))
 	httpResp, err := r.client.Delete(ctx, endpoint)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete project, got error: %s", err))
@@ -348,8 +348,8 @@ func (r *ProjectResource) Delete(ctx context.Context, req resource.DeleteRequest
 func (r *ProjectResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	projectIdentifier := fmt.Sprintf("%s/%s", r.client.workspace, req.ID)
 
-	// Get project details to validate and get the actual UUID
-	endpoint := fmt.Sprintf("/api/backend/v1/projects/details?projectIdentifier=%s", url.QueryEscape(projectIdentifier))
+	// Get project details to validate and get the actual UUID using IAAC endpoint
+	endpoint := fmt.Sprintf("/api/backend/v1/iaac/projects?projectIdentifier=%s", url.QueryEscape(projectIdentifier))
 	httpResp, err := r.client.Get(ctx, endpoint)
 	if err != nil {
 		resp.Diagnostics.AddError("Import Error", fmt.Sprintf("Unable to find project '%s': %s", req.ID, err))

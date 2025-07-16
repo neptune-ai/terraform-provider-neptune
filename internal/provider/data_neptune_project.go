@@ -141,8 +141,8 @@ func (d *ProjectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		projectIdentifier = fmt.Sprintf("%s/%s", d.client.workspace, data.ProjectName.ValueString())
 	}
 
-	// Get project details
-	endpoint = fmt.Sprintf("/api/backend/v1/projects/details?projectIdentifier=%s", url.QueryEscape(projectIdentifier))
+	// Get project details using IAAC endpoint
+	endpoint = fmt.Sprintf("/api/backend/v1/iaac/projects?projectIdentifier=%s", url.QueryEscape(projectIdentifier))
 	httpResp, err := d.client.Get(ctx, endpoint)
 	if err != nil {
 		// Check if this is a 404 error (resource not found)
