@@ -87,8 +87,8 @@ func (r *ProjectEmailAssignmentResource) Schema(ctx context.Context, req resourc
 			"role": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Default:             stringdefault.StaticString("viewer"),
-				MarkdownDescription: "The role to assign to the user within the project. Must be one of `viewer`, `member`, or `manager`. Defaults to `viewer`.",
+				Default:             stringdefault.StaticString("member"),
+				MarkdownDescription: "The role to assign to the user within the project. Must be one of `owner` or `member`. Defaults to `member`.",
 			},
 		},
 	}
