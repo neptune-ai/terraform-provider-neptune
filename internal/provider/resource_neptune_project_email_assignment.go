@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -14,7 +15,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -34,11 +38,6 @@ type ProjectEmailAssignmentResourceModel struct {
 	Project types.String `tfsdk:"project"`
 	Email   types.String `tfsdk:"email"`
 	Role    types.String `tfsdk:"role"`
-}
-
-type NewIaacProjectMemberDTO struct {
-	Email string `json:"email"`
-	Role  string `json:"role"`
 }
 
 type IaacProjectMemberUpdateDTO struct {
@@ -89,6 +88,9 @@ func (r *ProjectEmailAssignmentResource) Schema(ctx context.Context, req resourc
 				Computed:            true,
 				Default:             stringdefault.StaticString("member"),
 				MarkdownDescription: "The role to assign to the user within the project. Must be one of `owner` or `member`. Defaults to `member`.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("owner", "member"),
+				},
 			},
 		},
 	}
@@ -120,13 +122,14 @@ func (r *ProjectEmailAssignmentResource) Create(ctx context.Context, req resourc
 	projectIdentifier := data.Project.ValueString()
 	email := data.Email.ValueString()
 
-	memberReq := NewIaacProjectMemberDTO{
-		Email: email,
-		Role:  data.Role.ValueString(),
+	// Use the same DTO structure as Update since PUT now handles both create and update
+	memberReq := IaacProjectMemberUpdateDTO{
+		Role: data.Role.ValueString(),
 	}
 
-	endpoint := fmt.Sprintf("/api/backend/v1/iaac/projects/members?projectIdentifier=%s", url.QueryEscape(projectIdentifier))
-	httpResp, err := r.client.Post(ctx, endpoint, memberReq)
+	// Use PUT method with email as query parameter (same as Update)
+	endpoint := fmt.Sprintf("/api/backend/v1/iaac/projects/members?projectIdentifier=%s&email=%s", url.QueryEscape(projectIdentifier), url.QueryEscape(email))
+	httpResp, err := r.client.Put(ctx, endpoint, memberReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to add project member, got error: %s", err))
 		return

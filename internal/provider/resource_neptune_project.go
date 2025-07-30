@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -13,6 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -120,16 +123,22 @@ func (r *ProjectResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Computed:            true,
 				Default:             stringdefault.StaticString("priv"),
 				MarkdownDescription: "Project visibility: `priv` (private), `pub` (public), or `workspace` (workspace). Default is `priv`.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("priv", "pub", "workspace"),
+				},
 			},
 			"avatar": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Project avatar URL",
+				MarkdownDescription: "Project avatar URL (must be HTTP or HTTPS URL if provided)",
 			},
 			"avatar_source": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Default:             stringdefault.StaticString("default"),
 				MarkdownDescription: "Avatar source: `default`, `thirdParty`, `user`, `inherited`, or `unicode`",
+				Validators: []validator.String{
+					stringvalidator.OneOf("default", "thirdParty", "user", "inherited", "unicode"),
+				},
 			},
 			"color": schema.StringAttribute{
 				Optional:            true,
