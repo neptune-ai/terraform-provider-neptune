@@ -247,11 +247,6 @@ func (r *ProjectResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 	defer httpResp.Body.Close()
 
-	if httpResp.StatusCode == http.StatusNotFound {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
 	if httpResp.StatusCode != http.StatusOK {
 		resp.Diagnostics.AddError("API Error", fmt.Sprintf("Unable to read project, got status: %d", httpResp.StatusCode))
 		return
@@ -364,11 +359,6 @@ func (r *ProjectResource) ImportState(ctx context.Context, req resource.ImportSt
 		return
 	}
 	defer httpResp.Body.Close()
-
-	if httpResp.StatusCode == http.StatusNotFound {
-		resp.Diagnostics.AddError("Import Error", fmt.Sprintf("Project '%s' not found", req.ID))
-		return
-	}
 
 	if httpResp.StatusCode != http.StatusOK {
 		resp.Diagnostics.AddError("Import Error", fmt.Sprintf("Unable to read project '%s', got status: %d", req.ID, httpResp.StatusCode))

@@ -113,6 +113,37 @@ func (r *ProjectEmailAssignmentResource) Configure(ctx context.Context, req reso
 	r.client = client
 }
 
+// performUpdateOperation handles the common logic for both Create and Update operations
+func (r *ProjectEmailAssignmentResource) performUpdateOperation(ctx context.Context, data *ProjectEmailAssignmentResourceModel, addError func(string, string)) (*ProjectMember, bool) {
+	projectIdentifier := data.Project.ValueString()
+	email := data.Email.ValueString()
+
+	memberReq := ProjectMemberUpdateRequest{
+		Role: data.Role.ValueString(),
+	}
+
+	endpoint := fmt.Sprintf("/api/backend/v1/iaac/projects/members?projectIdentifier=%s&email=%s", url.QueryEscape(projectIdentifier), url.QueryEscape(email))
+	httpResp, err := r.client.Put(ctx, endpoint, memberReq)
+	if err != nil {
+		addError("Client Error", fmt.Sprintf("Unable to update project member, got error: %s", err))
+		return nil, false
+	}
+	defer httpResp.Body.Close()
+
+	if httpResp.StatusCode != http.StatusOK {
+		addError("API Error", fmt.Sprintf("Unable to update project member, got status: %d", httpResp.StatusCode))
+		return nil, false
+	}
+
+	var memberResp ProjectMember
+	if err := json.NewDecoder(httpResp.Body).Decode(&memberResp); err != nil {
+		addError("Parse Error", fmt.Sprintf("Unable to parse project member response: %s", err))
+		return nil, false
+	}
+
+	return &memberResp, true
+}
+
 func (r *ProjectEmailAssignmentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data ProjectEmailAssignmentResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
@@ -120,34 +151,15 @@ func (r *ProjectEmailAssignmentResource) Create(ctx context.Context, req resourc
 		return
 	}
 
+	memberResp, success := r.performUpdateOperation(ctx, &data, func(title, message string) {
+		resp.Diagnostics.AddError(title, message)
+	})
+	if !success {
+		return
+	}
+
 	projectIdentifier := data.Project.ValueString()
 	email := data.Email.ValueString()
-
-	// Use the same request structure as Update since PUT now handles both create and update
-	memberReq := ProjectMemberUpdateRequest{
-		Role: data.Role.ValueString(),
-	}
-
-	// Use PUT method with email as query parameter (same as Update)
-	endpoint := fmt.Sprintf("/api/backend/v1/iaac/projects/members?projectIdentifier=%s&email=%s", url.QueryEscape(projectIdentifier), url.QueryEscape(email))
-	httpResp, err := r.client.Put(ctx, endpoint, memberReq)
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to add project member, got error: %s", err))
-		return
-	}
-	defer httpResp.Body.Close()
-
-	if httpResp.StatusCode != http.StatusOK {
-		resp.Diagnostics.AddError("API Error", fmt.Sprintf("Unable to add project member, got status: %d", httpResp.StatusCode))
-		return
-	}
-
-	var memberResp ProjectMember
-	if err := json.NewDecoder(httpResp.Body).Decode(&memberResp); err != nil {
-		resp.Diagnostics.AddError("Parse Error", fmt.Sprintf("Unable to parse project member response: %s", err))
-		return
-	}
-
 	data.Id = types.StringValue(fmt.Sprintf("%s/%s", projectIdentifier, email))
 	data.Email = types.StringValue(memberResp.Email)
 	data.Role = types.StringValue(memberResp.Role)
@@ -177,11 +189,6 @@ func (r *ProjectEmailAssignmentResource) Read(ctx context.Context, req resource.
 		return
 	}
 	defer httpResp.Body.Close()
-
-	if httpResp.StatusCode == http.StatusNotFound {
-		resp.State.RemoveResource(ctx)
-		return
-	}
 
 	if httpResp.StatusCode != http.StatusOK {
 		resp.Diagnostics.AddError("API Error", fmt.Sprintf("Unable to list project members, got status: %d", httpResp.StatusCode))
@@ -222,29 +229,10 @@ func (r *ProjectEmailAssignmentResource) Update(ctx context.Context, req resourc
 		return
 	}
 
-	projectIdentifier := data.Project.ValueString()
-	email := data.Email.ValueString()
-
-	updateReq := ProjectMemberUpdateRequest{
-		Role: data.Role.ValueString(),
-	}
-
-	endpoint := fmt.Sprintf("/api/backend/v1/iaac/projects/members?projectIdentifier=%s&email=%s", url.QueryEscape(projectIdentifier), url.QueryEscape(email))
-	httpResp, err := r.client.Put(ctx, endpoint, updateReq)
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update project member, got error: %s", err))
-		return
-	}
-	defer httpResp.Body.Close()
-
-	if httpResp.StatusCode != http.StatusOK {
-		resp.Diagnostics.AddError("API Error", fmt.Sprintf("Unable to update project member, got status: %d", httpResp.StatusCode))
-		return
-	}
-
-	var memberResp ProjectMember
-	if err := json.NewDecoder(httpResp.Body).Decode(&memberResp); err != nil {
-		resp.Diagnostics.AddError("Parse Error", fmt.Sprintf("Unable to parse project member response: %s", err))
+	memberResp, success := r.performUpdateOperation(ctx, &data, func(title, message string) {
+		resp.Diagnostics.AddError(title, message)
+	})
+	if !success {
 		return
 	}
 
