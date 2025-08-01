@@ -20,6 +20,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+const projectMembersEndpoint = "/api/backend/v1/iaac/projects/members"
+
 var _ resource.Resource = &ProjectEmailAssignmentResource{}
 var _ resource.ResourceWithImportState = &ProjectEmailAssignmentResource{}
 
@@ -122,7 +124,7 @@ func (r *ProjectEmailAssignmentResource) performUpdateOperation(ctx context.Cont
 		Role: data.Role.ValueString(),
 	}
 
-	endpoint := fmt.Sprintf("/api/backend/v1/iaac/projects/members?projectIdentifier=%s&email=%s", url.QueryEscape(projectIdentifier), url.QueryEscape(email))
+	endpoint := fmt.Sprintf("%s?projectIdentifier=%s&email=%s", projectMembersEndpoint, url.QueryEscape(projectIdentifier), url.QueryEscape(email))
 	httpResp, err := r.client.Put(ctx, endpoint, memberReq)
 	if err != nil {
 		addError("Client Error", fmt.Sprintf("Unable to update project member, got error: %s", err))
@@ -178,7 +180,7 @@ func (r *ProjectEmailAssignmentResource) Read(ctx context.Context, req resource.
 	projectIdentifier := data.Project.ValueString()
 	email := data.Email.ValueString()
 
-	endpoint := fmt.Sprintf("/api/backend/v1/iaac/projects/members?projectIdentifier=%s", url.QueryEscape(projectIdentifier))
+	endpoint := fmt.Sprintf("%s?projectIdentifier=%s", projectMembersEndpoint, url.QueryEscape(projectIdentifier))
 	httpResp, err := r.client.Get(ctx, endpoint)
 	if err != nil {
 		if neptuneErr, ok := err.(*NeptuneError); ok && neptuneErr.StatusCode == http.StatusNotFound {
@@ -250,7 +252,7 @@ func (r *ProjectEmailAssignmentResource) Delete(ctx context.Context, req resourc
 	projectIdentifier := data.Project.ValueString()
 	email := data.Email.ValueString()
 
-	endpoint := fmt.Sprintf("/api/backend/v1/iaac/projects/members?projectIdentifier=%s&email=%s", url.QueryEscape(projectIdentifier), url.QueryEscape(email))
+	endpoint := fmt.Sprintf("%s?projectIdentifier=%s&email=%s", projectMembersEndpoint, url.QueryEscape(projectIdentifier), url.QueryEscape(email))
 	httpResp, err := r.client.Delete(ctx, endpoint)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete project member, got error: %s", err))
