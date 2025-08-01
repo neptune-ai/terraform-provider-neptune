@@ -27,7 +27,7 @@ provider "neptune" {
 }
 
 
-# Project with custom avatar and colors
+# Project
 resource "neptune_project" "example_project" {
   name        = "example-project"
   description = "Project with examples"

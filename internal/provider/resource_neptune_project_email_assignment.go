@@ -115,7 +115,6 @@ func (r *ProjectEmailAssignmentResource) Configure(ctx context.Context, req reso
 	r.client = client
 }
 
-// performUpdateOperation handles the common logic for both Create and Update operations
 func (r *ProjectEmailAssignmentResource) performUpdateOperation(ctx context.Context, data *ProjectEmailAssignmentResourceModel, addError func(string, string)) (*ProjectMember, bool) {
 	projectIdentifier := data.Project.ValueString()
 	email := data.Email.ValueString()
