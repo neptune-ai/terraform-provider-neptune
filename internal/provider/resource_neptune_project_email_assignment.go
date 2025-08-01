@@ -162,7 +162,7 @@ func (r *ProjectEmailAssignmentResource) Create(ctx context.Context, req resourc
 
 	projectIdentifier := data.Project.ValueString()
 	email := data.Email.ValueString()
-	data.Id = types.StringValue(fmt.Sprintf("%s/%s", projectIdentifier, email))
+	data.Id = types.StringValue(makeProjectEmailAssignmentId(projectIdentifier, email))
 	data.Email = types.StringValue(memberResp.Email)
 	data.Role = types.StringValue(memberResp.Role)
 
@@ -219,7 +219,7 @@ func (r *ProjectEmailAssignmentResource) Read(ctx context.Context, req resource.
 	data.Project = types.StringValue(projectIdentifier)
 	data.Email = types.StringValue(foundMember.Email)
 	data.Role = types.StringValue(foundMember.Role)
-	data.Id = types.StringValue(fmt.Sprintf("%s/%s", projectIdentifier, email))
+	data.Id = types.StringValue(makeProjectEmailAssignmentId(projectIdentifier, email))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -267,19 +267,28 @@ func (r *ProjectEmailAssignmentResource) Delete(ctx context.Context, req resourc
 }
 
 func (r *ProjectEmailAssignmentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	idParts := strings.Split(req.ID, "/")
-	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
+	projectIdentifier, email, err := parseProjectEmailAssignmentId(req.ID)
+	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected import identifier with format: `<project_identifier>/<email>`. Got: %q", req.ID),
+			err.Error(),
 		)
 		return
 	}
 
-	projectIdentifier := idParts[0]
-	email := idParts[1]
-
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("project"), projectIdentifier)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("email"), email)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+}
+
+func makeProjectEmailAssignmentId(projectIdentifier, email string) string {
+	return fmt.Sprintf("%s/%s", projectIdentifier, email)
+}
+
+func parseProjectEmailAssignmentId(id string) (projectIdentifier, email string, err error) {
+	idParts := strings.Split(id, "/")
+	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
+		return "", "", fmt.Errorf("expected format `<project_identifier>/<email>`, got: %q", id)
+	}
+	return idParts[0], idParts[1], nil
 }
