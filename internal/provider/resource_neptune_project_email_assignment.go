@@ -38,17 +38,20 @@ type ProjectEmailAssignmentResourceModel struct {
 	Role    types.String `tfsdk:"role"`
 }
 
-type IaacProjectMemberUpdateDTO struct {
+// ProjectMemberUpdateRequest represents the request payload for updating a project member.
+type ProjectMemberUpdateRequest struct {
 	Role string `json:"role"`
 }
 
-type IaacProjectMemberDTO struct {
+// ProjectMember represents a project member.
+type ProjectMember struct {
 	Email string `json:"email"`
 	Role  string `json:"role"`
 }
 
-type IaacProjectMembersListDTO struct {
-	Members []IaacProjectMemberDTO `json:"members"`
+// ProjectMembersResponse represents the API response for listing project members.
+type ProjectMembersResponse struct {
+	Members []ProjectMember `json:"members"`
 }
 
 func (r *ProjectEmailAssignmentResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -120,8 +123,8 @@ func (r *ProjectEmailAssignmentResource) Create(ctx context.Context, req resourc
 	projectIdentifier := data.Project.ValueString()
 	email := data.Email.ValueString()
 
-	// Use the same DTO structure as Update since PUT now handles both create and update
-	memberReq := IaacProjectMemberUpdateDTO{
+	// Use the same request structure as Update since PUT now handles both create and update
+	memberReq := ProjectMemberUpdateRequest{
 		Role: data.Role.ValueString(),
 	}
 
@@ -139,7 +142,7 @@ func (r *ProjectEmailAssignmentResource) Create(ctx context.Context, req resourc
 		return
 	}
 
-	var memberResp IaacProjectMemberDTO
+	var memberResp ProjectMember
 	if err := json.NewDecoder(httpResp.Body).Decode(&memberResp); err != nil {
 		resp.Diagnostics.AddError("Parse Error", fmt.Sprintf("Unable to parse project member response: %s", err))
 		return
@@ -185,13 +188,13 @@ func (r *ProjectEmailAssignmentResource) Read(ctx context.Context, req resource.
 		return
 	}
 
-	var listResp IaacProjectMembersListDTO
+	var listResp ProjectMembersResponse
 	if err := json.NewDecoder(httpResp.Body).Decode(&listResp); err != nil {
 		resp.Diagnostics.AddError("Parse Error", fmt.Sprintf("Unable to parse project members list response: %s", err))
 		return
 	}
 
-	var foundMember *IaacProjectMemberDTO
+	var foundMember *ProjectMember
 	for i := range listResp.Members {
 		if listResp.Members[i].Email == email {
 			foundMember = &listResp.Members[i]
@@ -222,7 +225,7 @@ func (r *ProjectEmailAssignmentResource) Update(ctx context.Context, req resourc
 	projectIdentifier := data.Project.ValueString()
 	email := data.Email.ValueString()
 
-	updateReq := IaacProjectMemberUpdateDTO{
+	updateReq := ProjectMemberUpdateRequest{
 		Role: data.Role.ValueString(),
 	}
 
@@ -239,7 +242,7 @@ func (r *ProjectEmailAssignmentResource) Update(ctx context.Context, req resourc
 		return
 	}
 
-	var memberResp IaacProjectMemberDTO
+	var memberResp ProjectMember
 	if err := json.NewDecoder(httpResp.Body).Decode(&memberResp); err != nil {
 		resp.Diagnostics.AddError("Parse Error", fmt.Sprintf("Unable to parse project member response: %s", err))
 		return
