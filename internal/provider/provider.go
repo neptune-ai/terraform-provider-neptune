@@ -103,6 +103,6 @@ func (p *neptuneProvider) DataSources(_ context.Context) []func() datasource.Dat
 func (p *neptuneProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewProjectResource,
-		// NewProjectEmailAssignmentResource,
+		NewProjectEmailAssignmentResource,
 	}
 }

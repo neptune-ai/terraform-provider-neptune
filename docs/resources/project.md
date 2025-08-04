@@ -133,7 +133,7 @@ variable "workspace" {
 
 ### Optional
 
-- `avatar` (String) Project avatar URL
+- `avatar` (String) Project avatar URL (must be HTTP or HTTPS URL if provided)
 - `avatar_source` (String) Avatar source: `default`, `thirdParty`, `user`, `inherited`, or `unicode`
 - `color` (String) Project color or display class
 - `description` (String) Project description
