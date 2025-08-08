@@ -2,6 +2,9 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -13,6 +16,11 @@ import (
 // Ensure the implementation satisfies the expected interfaces.
 var (
 	_ provider.Provider = &neptuneProvider{}
+)
+
+const (
+	NeptuneAPITokenEnvVar  = "NEPTUNE_API_TOKEN"
+	NeptuneWorkspaceEnvVar = "NEPTUNE_WORKSPACE"
 )
 
 // New is a helper function to simplify provider server and testing implementation.
@@ -49,13 +57,13 @@ func (p *neptuneProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"neptune_token": schema.StringAttribute{
-				Description: "The Neptune API token. Can be taken from User or a Service Account",
-				Required:    true,
+				Description: fmt.Sprintf("The Neptune API token. Can be taken from User or a Service Account. Can also be provided via %s environment variable.", NeptuneAPITokenEnvVar),
+				Optional:    true,
 				Sensitive:   true,
 			},
 			"workspace": schema.StringAttribute{
-				Description: "The Neptune workspace name",
-				Required:    true,
+				Description: fmt.Sprintf("The Neptune workspace name. Can also be provided via %s environment variable.", NeptuneWorkspaceEnvVar),
+				Optional:    true,
 			},
 			"timeout": schema.Int64Attribute{
 				Description: "The timeout for the Neptune API client",
@@ -76,7 +84,43 @@ func (p *neptuneProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	client, err := NewNeptuneClient(config.NeptuneToken.ValueString(), config.Workspace.ValueString(), config.Timeout.ValueInt64(), p.version)
+	// Resolve configuration from explicit values or environment variables
+	token := strings.TrimSpace(config.NeptuneToken.ValueString())
+	if token == "" {
+		// Value from environment variable
+	var token string
+	if config.NeptuneToken.IsNull() {
+		// Value from environment variable
+		token = strings.TrimSpace(os.Getenv(NeptuneAPITokenEnvVar))
+	} else {
+		token = strings.TrimSpace(config.NeptuneToken.ValueString())
+	}
+
+	var workspace string
+	if !config.Workspace.IsNull() {
+		workspace = strings.TrimSpace(config.Workspace.ValueString())
+	}
+	if workspace == "" {
+		workspace = strings.TrimSpace(os.Getenv(NeptuneWorkspaceEnvVar))
+	}
+
+	if token == "" {
+		resp.Diagnostics.AddError(
+			"Missing Neptune API token",
+			fmt.Sprintf("Provide `neptune_token` in the provider configuration or set the %s environment variable.", NeptuneAPITokenEnvVar),
+		)
+		return
+	}
+
+	if workspace == "" {
+		resp.Diagnostics.AddError(
+			"Missing Neptune workspace",
+			fmt.Sprintf("Provide `workspace` in the provider configuration or set the %s environment variable.", NeptuneWorkspaceEnvVar),
+		)
+		return
+	}
+
+	client, err := NewNeptuneClient(token, workspace, config.Timeout.ValueInt64(), p.version)
 
 	if err != nil {
 		resp.Diagnostics.AddError(
