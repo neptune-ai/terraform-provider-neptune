@@ -37,10 +37,13 @@ You can use this provider by adding the following to your Terraform configuratio
 
 ```hcl
 provider "neptune" {
-  neptune_token = "NEPTUNE_TOKEN"
+  # Can also be set via NEPTUNE_API_TOKEN environment variable
+  neptune_token = "${var.neptune_token}"
   workspace     = "neptune-workspace"
 }
 ```
+
+Note: The token must belong to a user with the workspace admin role (or a service account with equivalent permissions).
 
 ## Developing the Provider
 

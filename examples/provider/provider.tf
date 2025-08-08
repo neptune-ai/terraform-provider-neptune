@@ -8,7 +8,7 @@ terraform {
 
 provider "neptune" {
   # Neptune API token (can be from user or service account)
-  # Can also be set via NEPTUNE_TOKEN environment variable
+  # Can also be set via NEPTUNE_API_TOKEN environment variable
   neptune_token = var.neptune_token
 
   # Neptune workspace name (organization identifier)
@@ -20,7 +20,7 @@ provider "neptune" {
 }
 
 variable "neptune_token" {
-  description = "Neptune API token from user or service account"
+  description = "Neptune API token from user or service account (must be from a user with workspace admin role). Prefer environment variable NEPTUNE_API_TOKEN."
   type        = string
   sensitive   = true
 }
