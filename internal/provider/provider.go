@@ -96,7 +96,10 @@ func (p *neptuneProvider) Configure(ctx context.Context, req provider.ConfigureR
 		token = strings.TrimSpace(config.NeptuneToken.ValueString())
 	}
 
-	workspace := strings.TrimSpace(config.Workspace.ValueString())
+	var workspace string
+	if !config.Workspace.IsNull() {
+		workspace = strings.TrimSpace(config.Workspace.ValueString())
+	}
 	if workspace == "" {
 		workspace = strings.TrimSpace(os.Getenv(NeptuneWorkspaceEnvVar))
 	}
